@@ -35,7 +35,20 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/override_changai/css/override_changai.css"
-# app_include_js = "/assets/override_changai/js/override_changai.js"
+
+from pathlib import Path
+
+rebrand_js_path = Path(__file__).resolve().parent / "public" / "js" / "qdynamics_rebrand.js"
+try:
+    rebrand_asset_stamp = str(int(rebrand_js_path.stat().st_mtime))
+except FileNotFoundError:
+    rebrand_asset_stamp = "1"
+
+REBRAND_ASSET_VERSION = f"?v={rebrand_asset_stamp}"
+
+app_include_js = [
+    f"/assets/override_changai/js/qdynamics_rebrand.js{REBRAND_ASSET_VERSION}",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/override_changai/css/override_changai.css"
