@@ -50,6 +50,20 @@ app_include_js = [
     f"/assets/override_changai/js/qdynamics_rebrand.js{REBRAND_ASSET_VERSION}",
 ]
 
+# Session hooks
+# -------------
+# ChangAI's retrieve.load_on_startup runs get_master_vs() here, whose
+# frappe.throw leaves the "FAISS MASTER store not found" notice in
+# frappe.local.message_log even though the exception is swallowed, so it
+# is serialised into the login response and shown as a popup on /login.
+# override_changai is installed after changai, so _load_app_hooks appends
+# this entry *after* changai's warmup hooks and before the response is
+# built. Only that one message is dropped; the throw, its catch and the
+# Error Log in changai are untouched. See overrides/changai_messages.py.
+on_session_creation = [
+    "override_changai.overrides.changai_messages.drop_changai_master_store_message",
+]
+
 # include js, css files in header of web template
 # web_include_css = "/assets/override_changai/css/override_changai.css"
 # web_include_js = "/assets/override_changai/js/override_changai.js"
@@ -240,7 +254,14 @@ app_include_js = [
 # Request Events
 # ----------------
 # before_request = ["override_changai.utils.before_request"]
-# after_request = ["override_changai.utils.after_request"]
+# Safety net: _make_logs_v1 has already folded frappe.local.message_log
+# into the built JSON by the time this runs, so scrub the same ChangAI
+# FAISS master-store notice out of _server_messages/messages on any
+# response that carries it. Skipped entirely (single substring search)
+# unless the marker bytes are present; other messages are never touched.
+after_request = [
+    "override_changai.overrides.changai_messages.strip_faiss_master_from_response",
+]
 
 # Job Events
 # ----------
